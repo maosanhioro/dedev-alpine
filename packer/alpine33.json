@@ -1,0 +1,90 @@
+{
+  "variables": {
+    "cleanup_pause": "",
+    "iso_path": "iso/alpine-3.3.3-x86_64.iso",
+    "iso_url": "http://dl-4.alpinelinux.org/alpine/v3.3/releases/x86_64/alpine-3.3.3-x86_64.iso",
+    "iso_checksum": "5f842e2ff281651dc5507a78f759037661d43889",
+    "hostname": "vagrant",
+    "ssh_fullname": "vagrant",
+    "ssh_password": "vagrant",
+    "ssh_username": "root",
+    "version": "0.1.0"
+  },
+  "builders": [
+    {
+      "boot_command": [
+        "<tab> text ks=http://{{ .HTTPIP }}:{{ .HTTPPort}}/ks.cfg<enter>"
+      ],
+      "boot_command": [
+        "root<enter><wait>",
+        "ifconfig eth0 up && udhcpc -i eth0<enter><wait>",
+        "wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/answers<enter><wait>",
+        "setup-alpine -f answers<enter><wait10>",
+        "vagrant<enter><wait>",
+        "vagrant<enter><wait10>",
+        "y<enter>",
+        "<wait10><wait10><wait10><wait10><wait10><wait10><wait10><wait10><wait10>",
+        "/etc/init.d/sshd stop<enter><wait>",
+        "reboot<enter>"
+      ],
+      "hard_drive_interface": "sata",
+      "disk_size": 10240,
+      "guest_additions_mode": "disable",
+      "guest_os_type": "Linux26_64",
+      "headless": true,
+      "http_directory": "http",
+      "iso_checksum": "{{ user `iso_checksum` }}",
+      "iso_checksum_type": "sha1",
+      "iso_urls": [
+        "{{ user `iso_path` }}",
+        "{{ user `iso_url` }}"
+      ],
+      "shutdown_command": "/sbin/poweroff",
+      "ssh_password": "{{ user `ssh_password` }}",
+      "ssh_username": "{{ user `ssh_username` }}",
+      "ssh_wait_timeout": "100s",
+      "ssh_pty": "true",
+      "type": "virtualbox-iso",
+      "vboxmanage": [
+        [
+          "modifyvm",
+          "{{.Name}}",
+          "--memory",
+          "512"
+        ],
+        [
+          "modifyvm",
+          "{{.Name}}",
+          "--cpus",
+          "1"
+        ]
+      ],
+      "virtualbox_version_file": ".vbox_version",
+      "vm_name": "Alpine33"
+    }
+  ],
+  "provisioners": [
+    {
+      "environment_vars": [
+        "CLEANUP_PAUSE={{user `cleanup_pause`}}",
+        "SSH_USERNAME={{user `ssh_username`}}",
+        "SSH_PASSWORD={{user `ssh_password`}}"
+      ],
+      "execute_command": "echo '{{ user `ssh_password` }}' | {{.Vars}} sudo -E -S bash '{{.Path}}'",
+      "scripts": [
+        "script/base.sh",
+        "script/vagrant.sh",
+        "script/sshd.sh",
+        "script/zerodisk.sh"
+      ],
+      "type": "shell"
+    }
+  ],
+  "post-processors": [
+    {
+      "keep_input_artifact": false,
+      "output": "box/alpine33-{{user `version`}}.box",
+      "type": "vagrant"
+    }
+  ]
+}
